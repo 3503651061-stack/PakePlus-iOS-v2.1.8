@@ -1,88 +1,585 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="./static/css/styles.css" />
-        <meta
-            http-equiv="Content-Security-Policy"
-            content="default-src * 'unsafe-inline' 'unsafe-eval'"
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Tauri App</title>
-        <script src="./static/js/main.js"></script>
-    </head>
-    <body>
-        <main class="container">
-            <h1>Welcome to TauriMan</h1>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree DFS/BFS Algorithm Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for log */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        /* Node transitions */
+        .node-circle {
+            transition: fill 0.3s ease, stroke 0.3s ease;
+        }
+        .edge-line {
+            transition: stroke 0.3s ease, stroke-width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex text-slate-800 bg-gray-50 font-sans">
 
-            <div class="row">
-                <a
-                    href="https://tauri.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <img
-                        src="./assets/tauri.svg"
-                        class="logo tauri"
-                        alt="Tauri logo"
-                    />
-                </a>
-                <a
-                    href="https://pakeplus.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <img
-                        src="https://hk.gh-proxy.org/https://github.com/Sjj1024/PakePlus/blob/main/app-icon.png"
-                        class="logo vanilla"
-                        alt="JavaScript logo"
-                    />
-                </a>
-            </div>
-            <p>Click to get data</p>
-            <form class="row" id="greet-form">
-                <input id="greet-input" placeholder="Enter a name..." />
-                <button type="submit" id="getdata">GET DATA</button>
-            </form>
-            <div class="functions">
-                <a href="./book.html" target="_self">跳转到book.html</a>
-                <a
-                    href="https://www.baidu.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >跳到百度blank
-                </a>
-                <a
-                    href="https://www.baidu.com"
-                    target="_self"
-                    rel="noopener noreferrer"
-                >
-                    跳到百度self
-                </a>
-                <button onclick="sayHello()">点击我</button>
-                <button onclick="sayHello()">下载文件</button>
-                <button onclick="sayHello()">上传文件</button>
-                <button onclick="sayHello()">访问相机</button>
-                <button onclick="sayHello()">访问麦克风</button>
-                <button onclick="sayHello()">访问相册</button>
-                <button class="btn" onclick="openWechat()">打开微信</button>
-                <button class="btn" onclick="openWechatScan()">
-                    打开扫一扫
+    <aside class="w-80 bg-white border-r border-gray-200 flex flex-col shadow-sm z-10">
+        <div class="p-6 border-b border-gray-100">
+            <h1 class="text-xl font-bold text-slate-800 tracking-tight">Tree Algo Visualizer</h1>
+            <p class="text-xs text-slate-500 mt-1">DFS & BFS 算法可视化演示</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+            
+            <section class="space-y-3">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">配置</h2>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">节点数量 <span id="node-count-display" class="text-blue-600 font-bold ml-1">20</span></label>
+                    <input type="range" id="node-count-input" min="1" max="50" value="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>1</span>
+                        <span>50</span>
+                    </div>
+                </div>
+
+                <button id="btn-generate" class="w-full py-2 px-4 bg-white border border-gray-300 text-slate-700 font-medium rounded-md hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all text-sm shadow-sm active:scale-95">
+                    重新生成随机树
                 </button>
-                <button class="btn" onclick="openZhihu()">打开知乎</button>
-                <button onclick="sayHello()">打开抖音</button>
-                <button onclick="sayHello()">用浏览器打开</button>
-                <button>打开知乎</button>
+            </section>
+
+            <section class="space-y-3">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">算法选择</h2>
+                <div class="flex space-x-2 bg-gray-100 p-1 rounded-lg">
+                    <button id="btn-algo-dfs" class="flex-1 py-1.5 text-sm font-medium rounded-md shadow-sm bg-white text-blue-700 transition-all">DFS</button>
+                    <button id="btn-algo-bfs" class="flex-1 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all">BFS</button>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">执行控制</h2>
+                
+                <div class="grid grid-cols-4 gap-2">
+                    <button id="btn-play" class="col-span-1 flex items-center justify-center p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    <button id="btn-pause" class="col-span-1 flex items-center justify-center p-2 bg-white border border-gray-300 text-slate-700 rounded-md hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    </button>
+                    <button id="btn-step" class="col-span-2 flex items-center justify-center py-2 px-3 bg-white border border-gray-300 text-slate-700 rounded-md hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                        单步执行
+                    </button>
+                </div>
+
+                <button id="btn-reset" class="w-full py-2 px-4 text-red-600 bg-red-50 border border-red-100 rounded-md hover:bg-red-100 transition-colors text-sm font-medium">
+                    重置状态
+                </button>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">动画速度</label>
+                    <input type="range" id="speed-input" min="100" max="2000" step="100" value="800" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" style="direction: rtl">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>慢</span>
+                        <span>快</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="p-6 bg-gray-50 border-t border-gray-200 text-xs">
+            <h3 class="font-semibold text-slate-500 mb-2">图例</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-white border-2 border-slate-400 mr-2"></span> 未访问</div>
+                <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-400 border-2 border-yellow-600 mr-2"></span> 待处理 (队列/栈)</div>
+                <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-blue-500 border-2 border-blue-700 mr-2"></span> 当前节点</div>
+                <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-green-500 border-2 border-green-700 mr-2"></span> 已完成</div>
             </div>
-            <p id="greet-msg"></p>
-            <img src="./static/image/cursor.jpeg" alt="logo" />
-            <video
-                src="https://hk.gh-proxy.org/https://github.com/Sjj1024/PakePlus/blob/main/docs/static/videos/pakeplus.mp4"
-                autoplay
-                controls
-                style="width: 100%; height: 100%"
-            ></video>
-            <audio src="./static/music/yin.mp3" controls></audio>
-        </main>
-    </body>
+        </div>
+    </aside>
+
+    <main class="flex-1 relative flex flex-col">
+        <div class="flex-1 bg-slate-50 relative overflow-hidden flex items-center justify-center" id="canvas-container">
+            <div class="absolute inset-0 z-0 opacity-10" 
+                 style="background-image: radial-gradient(#64748b 1px, transparent 1px); background-size: 20px 20px;">
+            </div>
+            
+            <svg id="tree-svg" class="w-full h-full z-10" style="max-height: 90vh; max-width: 90vw;">
+                </svg>
+        </div>
+
+        <div class="absolute bottom-6 right-6 w-80 bg-white/90 backdrop-blur rounded-lg shadow-lg border border-gray-200 flex flex-col max-h-48 z-20">
+            <div class="px-4 py-2 border-b border-gray-100 bg-gray-50/50 rounded-t-lg flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-600 uppercase">执行日志</span>
+                <span id="step-counter" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Step: 0</span>
+            </div>
+            <div id="log-container" class="flex-1 overflow-y-auto p-3 text-sm font-mono space-y-1 custom-scrollbar">
+                <div class="text-gray-400 italic text-xs">等待开始...</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * STATE OBJECT
+         * The single source of truth for the application
+         */
+        const STATE = {
+            // Configuration
+            config: {
+                nodeCount: 20,
+                speed: 800, // delay in ms
+                nodeRadius: 18,
+                levelHeight: 80,
+            },
+            
+            // Data
+            tree: null, // Root node with children structure
+            nodes: [],  // Flat array of nodes {id, x, y, children: []}
+            edges: [],  // Flat array of edges {source, target}
+            
+            // Algorithm State
+            algorithm: 'DFS', // 'DFS' or 'BFS'
+            isPlaying: false,
+            isFinished: false,
+            timerId: null,
+            
+            // Execution context
+            steps: [],       // Current step index
+            queue: [],       // Actual queue/stack data for visual
+            visited: new Set(),
+            currNodeId: null,
+            
+            // Layout bounds
+            viewBox: { x: 0, y: 0, w: 100, h: 100 }
+        };
+
+        /**
+         * UI OBJECT
+         * DOM Element References
+         */
+        const UI = {
+            // Inputs
+            nodeCountInput: document.getElementById('node-count-input'),
+            nodeCountDisplay: document.getElementById('node-count-display'),
+            speedInput: document.getElementById('speed-input'),
+            
+            // Buttons
+            btnGenerate: document.getElementById('btn-generate'),
+            btnAlgoDFS: document.getElementById('btn-algo-dfs'),
+            btnAlgoBFS: document.getElementById('btn-algo-bfs'),
+            btnPlay: document.getElementById('btn-play'),
+            btnPause: document.getElementById('btn-pause'),
+            btnStep: document.getElementById('btn-step'),
+            btnReset: document.getElementById('btn-reset'),
+            
+            // Visualization
+            svg: document.getElementById('tree-svg'),
+            logContainer: document.getElementById('log-container'),
+            stepCounter: document.getElementById('step-counter'),
+        };
+
+        /**
+         * INITIALIZATION
+         */
+        function init() {
+            bindEvents();
+            generateTree();
+        }
+
+        function bindEvents() {
+            // Configuration
+            UI.nodeCountInput.addEventListener('input', (e) => {
+                UI.nodeCountDisplay.textContent = e.target.value;
+                STATE.config.nodeCount = parseInt(e.target.value);
+            });
+
+            UI.speedInput.addEventListener('input', (e) => {
+                // Invert logic: slider right (high value) = fast (low delay)
+                // Slider: 100 (fast) to 2000 (slow)
+                // UI shows Right as Fast. Let's make slider value directly delay
+                // UI Label says: Left (Slow) -> Right (Fast)
+                // So High Value on slider should mean Low Delay
+                // Let's just fix the input logic: Left(100) -> Right(2000). 
+                // Wait, typically Right is Fast.
+                // Let's treat value as Delay. Left (2000ms) -> Right (100ms).
+                // HTML input `dir="rtl"` was added to make Left=Slow(High val), Right=Fast(Low val).
+                STATE.config.speed = parseInt(e.target.value);
+            });
+
+            UI.btnGenerate.addEventListener('click', () => {
+                resetAlgorithmState();
+                generateTree();
+            });
+
+            // Algo Selection
+            UI.btnAlgoDFS.addEventListener('click', () => setAlgorithm('DFS'));
+            UI.btnAlgoBFS.addEventListener('click', () => setAlgorithm('BFS'));
+
+            // Playback
+            UI.btnPlay.addEventListener('click', play);
+            UI.btnPause.addEventListener('click', pause);
+            UI.btnStep.addEventListener('click', step);
+            UI.btnReset.addEventListener('click', () => {
+                resetAlgorithmState();
+                renderGraph(); // Re-render to clear colors
+                log("状态已重置", "text-gray-500");
+            });
+        }
+
+        function setAlgorithm(algo) {
+            STATE.algorithm = algo;
+            
+            // Update UI styles
+            if (algo === 'DFS') {
+                UI.btnAlgoDFS.className = "flex-1 py-1.5 text-sm font-medium rounded-md shadow-sm bg-white text-blue-700 transition-all";
+                UI.btnAlgoBFS.className = "flex-1 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all";
+            } else {
+                UI.btnAlgoBFS.className = "flex-1 py-1.5 text-sm font-medium rounded-md shadow-sm bg-white text-blue-700 transition-all";
+                UI.btnAlgoDFS.className = "flex-1 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all";
+            }
+            
+            resetAlgorithmState();
+            renderGraph();
+            log(`切换算法为: ${algo}`, "text-blue-600 font-bold");
+        }
+
+        /**
+         * DATA LOGIC: TREE GENERATION
+         * Generates a random general tree
+         */
+        function generateTree() {
+            const count = STATE.config.nodeCount;
+            const nodes = [];
+            // Initialize nodes
+            for (let i = 0; i < count; i++) {
+                nodes.push({ id: i, children: [], x: 0, y: 0, width: 0 });
+            }
+
+            // Create random connections (ensure connectivity and no cycles)
+            // Strategy: For node i (1..N), connect to a random node j where j < i.
+            // This guarantees a tree structure rooted at 0.
+            for (let i = 1; i < count; i++) {
+                // Bias towards connecting to nodes that don't have too many children for better visuals
+                // But pure random is also fine. Let's do pure random j < i
+                const parentId = Math.floor(Math.random() * i);
+                nodes[parentId].children.push(nodes[i]);
+            }
+
+            STATE.tree = nodes[0];
+            STATE.nodes = nodes;
+            
+            // Layout Calculation
+            calculateLayout(STATE.tree);
+            
+            // Center ViewBox
+            updateViewBox();
+            
+            // Render
+            renderGraph();
+            log(`生成新树: ${count} 个节点`, "text-slate-700");
+        }
+
+        /**
+         * LAYOUT ALGORITHM
+         * Simple recursive layout for general trees
+         */
+        function calculateLayout(root) {
+            // 1. Calculate widths (post-order)
+            // Width of a node is sum of children widths, or 1 if leaf
+            function calcWidth(node) {
+                if (node.children.length === 0) {
+                    node.width = 1;
+                } else {
+                    node.width = node.children.reduce((sum, child) => sum + calcWidth(child), 0);
+                }
+                return node.width;
+            }
+            calcWidth(root);
+
+            // 2. Assign coordinates (pre-order)
+            const xSpacing = 50;
+            const ySpacing = STATE.config.levelHeight;
+            
+            function assignCoords(node, startX, depth) {
+                // Node X is centered in its allocated width
+                // The allocated width starts at startX and spans node.width units
+                node.x = startX + (node.width * xSpacing) / 2;
+                node.y = depth * ySpacing + 40; // +40 padding top
+
+                let childStartX = startX;
+                node.children.forEach(child => {
+                    assignCoords(child, childStartX, depth + 1);
+                    childStartX += child.width * xSpacing;
+                });
+            }
+            
+            assignCoords(root, 0, 0);
+
+            // Populate edges flat array for rendering
+            STATE.edges = [];
+            STATE.nodes.forEach(node => {
+                node.children.forEach(child => {
+                    STATE.edges.push({ source: node, target: child });
+                });
+            });
+        }
+
+        function updateViewBox() {
+            if (STATE.nodes.length === 0) return;
+            
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            STATE.nodes.forEach(n => {
+                if (n.x < minX) minX = n.x;
+                if (n.x > maxX) maxX = n.x;
+                if (n.y < minY) minY = n.y;
+                if (n.y > maxY) maxY = n.y;
+            });
+
+            // Add padding
+            const p = 50;
+            const w = maxX - minX + p * 2;
+            const h = maxY - minY + p * 2;
+            
+            STATE.viewBox = { x: minX - p, y: minY - p, w, h };
+            UI.svg.setAttribute('viewBox', `${minX - p} ${minY - p} ${w} ${h}`);
+        }
+
+        /**
+         * RENDERING
+         */
+        function renderGraph() {
+            const svg = UI.svg;
+            svg.innerHTML = ''; // Clear
+
+            // Draw Edges
+            STATE.edges.forEach(edge => {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", edge.source.x);
+                line.setAttribute("y1", edge.source.y);
+                line.setAttribute("x2", edge.target.x);
+                line.setAttribute("y2", edge.target.y);
+                line.setAttribute("stroke", "#cbd5e1"); // slate-300
+                line.setAttribute("stroke-width", "2");
+                line.setAttribute("class", "edge-line");
+                line.id = `edge-${edge.source.id}-${edge.target.id}`;
+                svg.appendChild(line);
+            });
+
+            // Draw Nodes
+            STATE.nodes.forEach(node => {
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("transform", `translate(${node.x}, ${node.y})`);
+                group.id = `node-group-${node.id}`;
+                
+                // Circle
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("r", STATE.config.nodeRadius);
+                circle.setAttribute("fill", "#ffffff");
+                circle.setAttribute("stroke", "#94a3b8"); // slate-400
+                circle.setAttribute("stroke-width", "2");
+                circle.setAttribute("class", "node-circle cursor-pointer");
+                circle.id = `node-${node.id}`;
+                
+                // Text
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("dy", ".35em");
+                text.setAttribute("text-anchor", "middle");
+                text.textContent = node.id;
+                text.setAttribute("class", "text-xs font-bold select-none pointer-events-none fill-slate-600");
+                text.id = `text-${node.id}`;
+
+                group.appendChild(circle);
+                group.appendChild(text);
+                svg.appendChild(group);
+            });
+        }
+
+        /**
+         * ALGORITHM EXECUTION
+         */
+        function resetAlgorithmState() {
+            pause();
+            STATE.queue = []; // For BFS, this is queue. For DFS, this is stack.
+            STATE.visited.clear();
+            STATE.currNodeId = null;
+            STATE.isFinished = false;
+            
+            // Initial State: Add root to structure
+            if (STATE.tree) {
+                STATE.queue = [STATE.tree]; 
+            }
+
+            // Visual Reset
+            document.querySelectorAll('.node-circle').forEach(el => {
+                el.setAttribute('fill', '#ffffff');
+                el.setAttribute('stroke', '#94a3b8');
+                el.setAttribute('stroke-width', '2');
+            });
+            document.querySelectorAll('text').forEach(el => el.setAttribute('fill', '#475569'));
+            document.querySelectorAll('.edge-line').forEach(el => el.setAttribute('stroke', '#cbd5e1'));
+
+            // Initial Log
+            UI.logContainer.innerHTML = '';
+            UI.stepCounter.textContent = "Step: 0";
+            
+            updateVisualsFromState(); // Show initial pending
+        }
+
+        function play() {
+            if (STATE.isFinished) return;
+            STATE.isPlaying = true;
+            UI.btnPlay.disabled = true;
+            UI.btnPause.disabled = false;
+            UI.btnStep.disabled = true;
+            UI.btnReset.disabled = true;
+            loop();
+        }
+
+        function pause() {
+            STATE.isPlaying = false;
+            if (STATE.timerId) clearTimeout(STATE.timerId);
+            UI.btnPlay.disabled = false;
+            UI.btnPause.disabled = true;
+            UI.btnStep.disabled = false;
+            UI.btnReset.disabled = false;
+        }
+
+        function loop() {
+            if (!STATE.isPlaying) return;
+            step();
+            if (!STATE.isFinished) {
+                STATE.timerId = setTimeout(loop, STATE.config.speed);
+            } else {
+                pause();
+            }
+        }
+
+        function step() {
+            if (STATE.isFinished) return;
+            
+            // Increment Step Counter logic
+            const currentStepCount = parseInt(UI.stepCounter.textContent.split(': ')[1]) + 1;
+            UI.stepCounter.textContent = `Step: ${currentStepCount}`;
+
+            if (STATE.queue.length === 0) {
+                STATE.isFinished = true;
+                log("算法执行完成！", "text-green-600 font-bold");
+                pause();
+                return;
+            }
+
+            // --- CORE LOGIC ---
+            let node;
+            if (STATE.algorithm === 'DFS') {
+                // Stack: Pop from end
+                node = STATE.queue.pop();
+            } else {
+                // Queue: Shift from start
+                node = STATE.queue.shift();
+            }
+
+            // If already visited (can happen in general graphs, less in trees but good practice)
+            if (STATE.visited.has(node.id)) {
+                // For a tree generated this way, we shouldn't hit this often unless cycles exist, 
+                // but our generation prevents cycles. However, standard algo check:
+                step(); // Skip immediately to next
+                return;
+            }
+
+            // Mark Visited
+            STATE.visited.add(node.id);
+            STATE.currNodeId = node.id;
+
+            // Add Children
+            // For DFS: Push children. To process Left-to-Right, push Right-then-Left so Left is on top of stack.
+            // For BFS: Enqueue children. Left-to-Right.
+            let childrenToAdd = [];
+            if (STATE.algorithm === 'DFS') {
+                // Reverse children for Stack
+                childrenToAdd = [...node.children].reverse();
+            } else {
+                childrenToAdd = node.children;
+            }
+
+            childrenToAdd.forEach(child => {
+                if (!STATE.visited.has(child.id)) {
+                    STATE.queue.push(child);
+                    // Highlight edge
+                    const edgeId = `edge-${node.id}-${child.id}`;
+                    const edgeEl = document.getElementById(edgeId);
+                    if(edgeEl) {
+                        edgeEl.setAttribute('stroke', '#a855f7'); // purple
+                        edgeEl.setAttribute('stroke-width', '3');
+                    }
+                }
+            });
+
+            // Log
+            const childrenIds = childrenToAdd.map(n => n.id).join(', ');
+            const action = childrenIds ? `添加子节点 [${childrenIds}] 到${STATE.algorithm==='DFS'?'栈':'队列'}` : '无子节点或已访问';
+            log(`访问节点 ${node.id}. ${action}`, "text-slate-700");
+
+            // Update Visuals
+            updateVisualsFromState();
+        }
+
+        function updateVisualsFromState() {
+            // Reset all non-visited to neutral first (inefficient but safe)
+            STATE.nodes.forEach(n => {
+                const circle = document.getElementById(`node-${n.id}`);
+                const text = document.getElementById(`text-${n.id}`);
+                
+                // Default
+                let fill = '#ffffff';
+                let stroke = '#94a3b8';
+                let txtFill = '#475569';
+
+                if (STATE.visited.has(n.id)) {
+                    fill = '#dcfce7'; // green-100
+                    stroke = '#16a34a'; // green-600
+                    txtFill = '#15803d';
+                }
+
+                // In Queue/Stack (Pending)
+                const inQueue = STATE.queue.find(qn => qn.id === n.id);
+                if (inQueue && !STATE.visited.has(n.id)) {
+                    fill = '#fef9c3'; // yellow-100
+                    stroke = '#ca8a04'; // yellow-600
+                }
+
+                // Current Active
+                if (n.id === STATE.currNodeId) {
+                    fill = '#2563eb'; // blue-600
+                    stroke = '#1e40af'; // blue-800
+                    txtFill = '#ffffff';
+                }
+
+                circle.setAttribute('fill', fill);
+                circle.setAttribute('stroke', stroke);
+                text.setAttribute('fill', txtFill);
+            });
+        }
+
+        function log(msg, classes="") {
+            const el = document.createElement('div');
+            el.className = `py-1 border-b border-gray-50 last:border-0 ${classes}`;
+            el.textContent = `> ${msg}`;
+            UI.logContainer.appendChild(el);
+            UI.logContainer.scrollTop = UI.logContainer.scrollHeight;
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
 </html>
